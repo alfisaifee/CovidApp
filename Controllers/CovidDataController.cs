@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -18,7 +19,7 @@ namespace MyFirstApp.Controllers
     public class CovidDataController : ControllerBase
     {
         [HttpGet]
-        public IList<Country> Get()
+        public CovidData Get()
         {
             CovidData covidData = new CovidData();
             HttpClient client = new HttpClient
@@ -30,14 +31,32 @@ namespace MyFirstApp.Controllers
             if (response.IsSuccessStatusCode)
             {
                 covidData = JsonConvert.DeserializeObject<CovidData>(response.Content.ReadAsStringAsync().Result);
+                //covidData = JsonConvert.DeserializeObject<CovidData>(covidData1.ToString());
             }
             else
             {
                 Debug.WriteLine("{0} ({1})", (int)response.StatusCode, response.ReasonPhrase);
             }
 
-            IList<Country> countries = covidData.Countries;
-            return countries;
+            foreach (var country in covidData.Countries)
+            {
+                string continent = this.GetContinent(country.CountryCode);
+                country.Continent = continent;
+            }
+
+            return covidData;
+        }
+
+        private string GetContinent(string countryCode)
+        {
+            JObject items;
+            using (StreamReader continents = new StreamReader("./Data/continents.json"))
+            {
+                string json = continents.ReadToEnd();
+                items = (JObject)JsonConvert.DeserializeObject(json);
+            }
+
+            return items[countryCode].Value<string>();
         }
     }
 }

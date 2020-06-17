@@ -24,6 +24,9 @@ namespace MyFirstApp
         [JsonProperty("CountryCode")]
         public string CountryCode { get; set; }
 
+        [JsonProperty("Continent")]
+        public string Continent { get; set; }
+
         [JsonProperty("Slug")]
         public string Slug { get; set; }
 
