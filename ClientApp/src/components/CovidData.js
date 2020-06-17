@@ -27,9 +27,10 @@ export class CovidData extends Component {
         this.setState({ selectedContinent: continent })
     }
 
-    static renderCovidTable(covidInfo, activePage, pageSize, selectedContinent) {
+    static renderCovidTable(covidInfo, activePage, pageSize, selectedContinent, handlePageChange) {
         const filtered = selectedContinent ? covidInfo.filter(c => c.continent === selectedContinent.name) : covidInfo;
         const covidInfoPage = paginate(filtered, activePage, pageSize)
+        const pagination = CovidData.renderPagination(filtered, handlePageChange, activePage, pageSize);
         return (
             <div>
                 <table className='table table-striped' aria-labelledby="table-label">
@@ -55,6 +56,7 @@ export class CovidData extends Component {
                             )}
                     </tbody>
                 </table>
+                {pagination}
             </div>
         );
     }
@@ -86,11 +88,10 @@ export class CovidData extends Component {
 
     render() {
         let contents = this.state.loading ? <p><em>Loading...</em></p> :
-            CovidData.renderCovidTable(this.state.covidInfo, this.state.activePage, this.state.pageSize, this.state.selectedContinent);
+            CovidData.renderCovidTable(this.state.covidInfo, this.state.activePage, this.state.pageSize, this.state.selectedContinent, this.handlePageChange);
 
-        const paginate = CovidData.renderPagination(this.state.covidInfo, this.handlePageChange, this.state.activePage, this.state.pageSize);
         const filtering = CovidData.renderFiltering(this.state.continents, this.handleContinentSelect, this.state.selectedContinent);
-
+        
         return (
             <div className="row">
                 <div className="col-2">
@@ -99,7 +100,7 @@ export class CovidData extends Component {
                 <div className="col">
                     <p id="tableLabel">{}</p>
                     {contents}
-                    {paginate}
+                   
                 </div>
             </div>
         );

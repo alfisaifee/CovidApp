@@ -31,7 +31,6 @@ namespace MyFirstApp.Controllers
             if (response.IsSuccessStatusCode)
             {
                 covidData = JsonConvert.DeserializeObject<CovidData>(response.Content.ReadAsStringAsync().Result);
-                //covidData = JsonConvert.DeserializeObject<CovidData>(covidData1.ToString());
             }
             else
             {
