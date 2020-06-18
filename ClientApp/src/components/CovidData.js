@@ -1,8 +1,7 @@
 ﻿import React, { Component } from 'react';
-import Pagination from 'react-js-pagination';
-import ListGroup from '../common/listGroup';
-import { paginate } from '../utils/paginate';
+import { renderCovidTable } from '../common/RenderCovidTable'
 import { getContinents } from '../common/continentsList';
+import { renderFiltering } from '../common/RenderFiltering';
 import _ from 'lodash';
 
 export class CovidData extends Component {
@@ -16,6 +15,7 @@ export class CovidData extends Component {
             loading: true,
             activePage: 1,
             pageSize: 10,
+            searchQuery: "",
             selectedContinent: { name: "All" },
             sortColumn: { path: 'countryCountry', order: 'asc' },
         };
@@ -28,11 +28,15 @@ export class CovidData extends Component {
     }
 
     handlePageChange = (page) => {
-        this.setState({ activePage: page })
+        this.setState({ activePage: page });
     }
 
     handleContinentSelect = (continent) => {
-        this.setState({ selectedContinent: continent, activePage: 1 })
+        this.setState({ selectedContinent: continent, searchQuery:"", activePage: 1 });
+    }
+
+    handleSearch = (query) => {
+        this.setState({ searchQuery: query, selectedContinent: null, activePage: 1 });
     }
 
     handleSort = (path) => {
@@ -54,73 +58,14 @@ export class CovidData extends Component {
         return <i className="fa fa-sort-desc"></i>;
     }
 
-    static renderCovidTable(covidInfo, activePage, pageSize, selectedContinent, handlePageChange, handleSort, sortColumn, renderSortIcon) {
-        let filtered = selectedContinent && selectedContinent.name !== "All" ? covidInfo.filter(c => c.continent === selectedContinent.name) : covidInfo;
-        let sorted = _.orderBy(filtered, [sortColumn.path], [sortColumn.order])
-        let covidInfoPage = paginate(sorted, activePage, pageSize)
-        let pagination = (sorted.length <= pageSize) ? null : CovidData.renderPagination(sorted, handlePageChange, activePage, pageSize);
-        return (
-            <div>
-                <p> Showing data for {sorted.length} countries </p>
-                <table className='table table-striped' aria-labelledby="table-label">
-                    <thead>
-                        <tr>
-                            <th onClick={() => handleSort('countryCountry')}>Country {renderSortIcon('countryCountry')}</th>
-                            <th onClick={() => handleSort('totalActive')}>Active {renderSortIcon('totalActive')} </th>
-                            <th onClick={() => handleSort('totalRecovered')}>Recovered {renderSortIcon('totalRecovered')} </th>
-                            <th onClick={() => handleSort('totalDeaths')}>Deaths {renderSortIcon('totalDeaths')} </th>
-                            <th onClick={() => handleSort('totalConfirmed')}>Total {renderSortIcon('totalConfirmed')} </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {
-                            covidInfoPage.map(info =>
-                                <tr key={info.countryCode}>
-                                    <td>{info.countryCountry}</td>
-                                    <td>{info.totalActive}</td>
-                                    <td>{info.totalRecovered}</td>
-                                    <td>{info.totalDeaths}</td>
-                                    <td>{info.totalConfirmed}</td>
-                                </tr>
-                            )}
-                    </tbody>
-                </table>
-                {pagination}
-            </div>
-        );
-    }
-
-    static renderPagination(covidInfo, handlePageChange, activePage, pageSize) {
-        return (
-            <Pagination
-                totalItemsCount={covidInfo.length}
-                itemsCountPerPage={pageSize}
-                onChange={handlePageChange}
-                activePage={activePage}
-                pageRangeDisplayed={5}
-                itemClass="page-item"
-                linkClass="page-link"
-                prevPageText="prev"
-                nextPageText="next"
-            >
-            </Pagination>);
-    }
-
-    static renderFiltering(continents, handleContinentSelect, selectedContinent) {
-        return (
-            <ListGroup
-                items={continents}
-                selectedItem={selectedContinent}
-                onItemSelect={handleContinentSelect}
-            />);
-    }
-
     render() {
         let contents = this.state.loading ? <p><em>Loading...</em></p> :
-            CovidData.renderCovidTable(this.state.covidInfo, this.state.activePage, this.state.pageSize,
-                this.state.selectedContinent, this.handlePageChange, this.handleSort, this.state.sortColumn, this.renderSortIcon);
+            renderCovidTable(this.state.covidInfo, this.state.activePage, this.state.pageSize,
+                this.state.selectedContinent, this.handlePageChange, this.handleSort,
+                this.state.sortColumn, this.renderSortIcon, this.state.searchQuery, this.handleSearch);
 
-        const filtering = CovidData.renderFiltering(this.state.continents, this.handleContinentSelect, this.state.selectedContinent);
+        const filtering = renderFiltering(this.state.continents, this.handleContinentSelect,
+            this.state.selectedContinent);
 
         return (
             <div className="row">
@@ -129,7 +74,6 @@ export class CovidData extends Component {
                 </div>
                 <div className="col">
                     {contents}
-
                 </div>
             </div>
         );
