@@ -41,6 +41,8 @@ namespace MyFirstApp.Controllers
             {
                 string continent = this.GetContinent(country.CountryCode);
                 country.Continent = continent;
+
+                country.TotalActive = country.TotalConfirmed - (country.TotalDeaths + country.TotalRecovered);
             }
 
             return covidData;

@@ -3,6 +3,7 @@ import Pagination from 'react-js-pagination';
 import ListGroup from '../common/listGroup';
 import { paginate } from '../utils/paginate';
 import { getContinents } from '../common/continentsList';
+import _ from 'lodash';
 
 export class CovidData extends Component {
     static displayName = CovidData.name;
@@ -10,13 +11,20 @@ export class CovidData extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            covidInfo: [], continents: [], loading: true, activePage: 1, pageSize: 10, selectedContinent: { name: "Asia" }
+            covidInfo: [],
+            continents: [],
+            loading: true,
+            activePage: 1,
+            pageSize: 10,
+            selectedContinent: { name: "All" },
+            sortColumn: { path: 'countryCountry', order: 'asc' },
         };
     }
 
     componentDidMount() {
         this.populateCovidData();
-        this.setState({ continents: getContinents() });
+        const continents = [{ name: "All" }, ...getContinents()];
+        this.setState({ continents });
     }
 
     handlePageChange = (page) => {
@@ -24,23 +32,44 @@ export class CovidData extends Component {
     }
 
     handleContinentSelect = (continent) => {
-        this.setState({ selectedContinent: continent })
+        this.setState({ selectedContinent: continent, activePage: 1 })
     }
 
-    static renderCovidTable(covidInfo, activePage, pageSize, selectedContinent, handlePageChange) {
-        const filtered = selectedContinent ? covidInfo.filter(c => c.continent === selectedContinent.name) : covidInfo;
-        const covidInfoPage = paginate(filtered, activePage, pageSize)
-        const pagination = CovidData.renderPagination(filtered, handlePageChange, activePage, pageSize);
+    handleSort = (path) => {
+        const sortColumn = { ...this.state.sortColumn }
+        if (sortColumn.path === path)
+            sortColumn.order = (sortColumn.order === 'asc') ? 'desc' : 'asc';
+        else {
+            sortColumn.path = path;
+            sortColumn.order = 'asc';
+        }
+        this.setState({ sortColumn })
+    }
+
+    renderSortIcon = (column) => {
+        const { sortColumn } = this.state;
+        if (column !== sortColumn.path) return null;
+        if (sortColumn.order === 'asc')
+            return <i className="fa fa-sort-asc"></i>;
+        return <i className="fa fa-sort-desc"></i>;
+    }
+
+    static renderCovidTable(covidInfo, activePage, pageSize, selectedContinent, handlePageChange, handleSort, sortColumn, renderSortIcon) {
+        let filtered = selectedContinent && selectedContinent.name !== "All" ? covidInfo.filter(c => c.continent === selectedContinent.name) : covidInfo;
+        let sorted = _.orderBy(filtered, [sortColumn.path], [sortColumn.order])
+        let covidInfoPage = paginate(sorted, activePage, pageSize)
+        let pagination = (sorted.length <= pageSize) ? null : CovidData.renderPagination(sorted, handlePageChange, activePage, pageSize);
         return (
             <div>
+                <p> Showing data for {sorted.length} countries </p>
                 <table className='table table-striped' aria-labelledby="table-label">
                     <thead>
                         <tr>
-                            <th>Country</th>
-                            <th>Active Cases</th>
-                            <th>Recovered Cases</th>
-                            <th>Deaths</th>
-                            <th>Total Cases</th>
+                            <th onClick={() => handleSort('countryCountry')}>Country {renderSortIcon('countryCountry')}</th>
+                            <th onClick={() => handleSort('totalActive')}>Active {renderSortIcon('totalActive')} </th>
+                            <th onClick={() => handleSort('totalRecovered')}>Recovered {renderSortIcon('totalRecovered')} </th>
+                            <th onClick={() => handleSort('totalDeaths')}>Deaths {renderSortIcon('totalDeaths')} </th>
+                            <th onClick={() => handleSort('totalConfirmed')}>Total {renderSortIcon('totalConfirmed')} </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -48,7 +77,7 @@ export class CovidData extends Component {
                             covidInfoPage.map(info =>
                                 <tr key={info.countryCode}>
                                     <td>{info.countryCountry}</td>
-                                    <td>{info.totalConfirmed - info.totalRecovered - info.totalDeaths}</td>
+                                    <td>{info.totalActive}</td>
                                     <td>{info.totalRecovered}</td>
                                     <td>{info.totalDeaths}</td>
                                     <td>{info.totalConfirmed}</td>
@@ -88,19 +117,19 @@ export class CovidData extends Component {
 
     render() {
         let contents = this.state.loading ? <p><em>Loading...</em></p> :
-            CovidData.renderCovidTable(this.state.covidInfo, this.state.activePage, this.state.pageSize, this.state.selectedContinent, this.handlePageChange);
+            CovidData.renderCovidTable(this.state.covidInfo, this.state.activePage, this.state.pageSize,
+                this.state.selectedContinent, this.handlePageChange, this.handleSort, this.state.sortColumn, this.renderSortIcon);
 
         const filtering = CovidData.renderFiltering(this.state.continents, this.handleContinentSelect, this.state.selectedContinent);
-        
+
         return (
             <div className="row">
                 <div className="col-2">
                     {filtering}
                 </div>
                 <div className="col">
-                    <p id="tableLabel">{}</p>
                     {contents}
-                   
+
                 </div>
             </div>
         );

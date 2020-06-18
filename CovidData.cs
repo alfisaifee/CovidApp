@@ -48,6 +48,9 @@ namespace MyFirstApp
         [JsonProperty("TotalRecovered")]
         public long TotalRecovered { get; set; }
 
+        [JsonProperty("TotalActive")]
+        public long TotalActive { get; set; }
+
         [JsonProperty("Date")]
         public DateTimeOffset Date { get; set; }
     }
