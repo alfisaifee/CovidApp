@@ -1,8 +1,12 @@
 ﻿import React, { Component } from 'react';
-import { renderCovidTable } from '../common/RenderCovidTable'
-import { getContinents } from '../common/continentsList';
-import { renderFiltering } from '../common/RenderFiltering';
+import { getContinents } from '../utils/continentsList';
 import _ from 'lodash';
+import CovidTable from './CovidTable';
+import ListGroup from '../common/ListGroup';
+import Pagination from 'react-js-pagination';
+import { paginate } from '../utils/paginate';
+import SearchBox from '../common/SearchBox';
+
 
 export class CovidData extends Component {
     static displayName = CovidData.name;
@@ -18,6 +22,7 @@ export class CovidData extends Component {
             searchQuery: "",
             selectedContinent: { name: "All" },
             sortColumn: { path: 'countryCountry', order: 'asc' },
+            date: "",
         };
     }
 
@@ -36,7 +41,10 @@ export class CovidData extends Component {
     }
 
     handleSearch = (query) => {
-        this.setState({ searchQuery: query, selectedContinent: null, activePage: 1 });
+        this.setState({
+            searchQuery: query, selectedContinent: null, activePage: 1,
+            sortColumn: { path: 'countryCountry', order: 'asc' }
+        });
     }
 
     handleSort = (path) => {
@@ -59,21 +67,46 @@ export class CovidData extends Component {
     }
 
     render() {
-        let contents = this.state.loading ? <p><em>Loading...</em></p> :
-            renderCovidTable(this.state.covidInfo, this.state.activePage, this.state.pageSize,
-                this.state.selectedContinent, this.handlePageChange, this.handleSort,
-                this.state.sortColumn, this.renderSortIcon, this.state.searchQuery, this.handleSearch);
+        const { covidInfo: items, searchQuery, selectedContinent: selectedItem,
+            sortColumn, activePage, pageSize, continents } = this.state
 
-        const filtering = renderFiltering(this.state.continents, this.handleContinentSelect,
-            this.state.selectedContinent);
+        let filtered = items;
+        if (searchQuery)
+            filtered = items.filter(c => c.countryCountry.toLowerCase().startsWith(searchQuery.toLowerCase()));
+        else if (selectedItem && selectedItem.name !== "All")
+            filtered = items.filter(c => c.continent === selectedItem.name);
+        let sorted = _.orderBy(filtered, [sortColumn.path], [sortColumn.order])
+        let covidInfoPage = paginate(sorted, activePage, pageSize)
 
         return (
             <div className="row">
                 <div className="col-2">
-                    {filtering}
+                    <ListGroup
+                        items={continents}
+                        selectedItem={selectedItem}
+                        onItemSelect={this.handleContinentSelect}
+                    />
                 </div>
                 <div className="col">
-                    {contents}
+                    <p> Showing data for {sorted.length} countries </p>
+                    <SearchBox value={searchQuery} onChange={this.handleSearch} />
+                    <CovidTable
+                        items={covidInfoPage}                        
+                        onSort={this.handleSort}                  
+                        sortIcon={this.renderSortIcon}                        
+                    />
+                    {sorted.length < pageSize ? null :
+                        <Pagination
+                            totalItemsCount={sorted.length}
+                            itemsCountPerPage={pageSize}
+                            onChange={this.handlePageChange}
+                            activePage={activePage}
+                            itemClass="page-item"
+                            linkClass="page-link"
+                            hideNavigation={sorted.length / pageSize <= 5 ? true : false}
+                        >
+                        </Pagination>
+                    }
                 </div>
             </div>
         );
